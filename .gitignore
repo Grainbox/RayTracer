@@ -1,0 +1,14 @@
+# IDE
+.vscode
+
+# build
+*.o
+*.so
+*.save
+
+# bin
+raytracer
+RayBootstrap
+
+# other
+*.ppm

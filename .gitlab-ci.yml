@@ -1,0 +1,20 @@
+stages:
+  - build
+  - push_check
+
+build:
+  stage: build
+  image: epitechcontent/epitest-docker:latest
+  script:
+    - dnf update -y
+    - dnf install -y libconfig-devel SFML
+    - make re
+    - if [ $? -ne 0 ]; then exit 1; fi
+
+push_check:
+  stage: push_check
+  needs: ["build"]
+  when: on_failure
+  script:
+    - echo "Build failed. Please fix the issues and try again."
+    - exit 1
