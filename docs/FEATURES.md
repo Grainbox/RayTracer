@@ -25,7 +25,7 @@ When calculating lighting for a surface point, cast a **shadow ray** from the in
 
 ---
 
-## 🪞 Reflections
+## ✅ Reflections
 
 **Priority:** Medium  
 **Difficulty:** Medium  

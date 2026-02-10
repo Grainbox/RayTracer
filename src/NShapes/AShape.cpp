@@ -16,6 +16,12 @@ Raytracer::Color Raytracer::AShape<ShapeType>::getColor() const
 }
 
 template <typename ShapeType>
+double Raytracer::AShape<ShapeType>::getReflectivity() const
+{
+    return this->reflectivity;
+}
+
+template <typename ShapeType>
 maths::Point3D Raytracer::AShape<ShapeType>::getCenter() const
 {
     return this->center;
@@ -31,6 +37,12 @@ template <typename ShapeType>
 void Raytracer::AShape<ShapeType>::setColor(Raytracer::Color color)
 {
     this->color = color;
+}
+
+template <typename ShapeType>
+void Raytracer::AShape<ShapeType>::setReflectivity(double reflectivity)
+{
+    this->reflectivity = reflectivity;
 }
 
 template <typename ShapeType>
@@ -52,6 +64,8 @@ void Raytracer::AShape<ShapeType>::setSettings(const libconfig::Setting &setting
         this->center = {settings["center"][0], settings["center"][1], settings["center"][2]};
         this->size = {settings["size"][0], settings["size"][1], settings["size"][2]};
         this->color = {settings["color"][0], settings["color"][1], settings["color"][2]};
+        if (settings.exists("reflectivity"))
+            this->reflectivity = (double)settings["reflectivity"];
     } catch (const libconfig::SettingNotFoundException &nfex) {
         std::cerr << nfex.what() << std::endl;
     }

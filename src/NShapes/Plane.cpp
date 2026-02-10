@@ -53,5 +53,7 @@ void Raytracer::Plane::setSettings(const libconfig::Setting &settings)
         color.g = settings["color"][1];
         color.b = settings["color"][2];
         this->setColor(color);
+        if (settings.exists("reflectivity"))
+            this->setReflectivity((double)settings["reflectivity"]);
     }
 }

@@ -59,6 +59,14 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
         ray.direction.z /= rayLen;
     }
 
+    return getColor(ray, 0);
+}
+
+Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth)
+{
+    if (depth >= MAX_DEPTH)
+        return {0, 0, 0};
+
     Color pixelColor = {0, 0, 0};
     
     // Find closest hit
@@ -83,6 +91,7 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
 
     if (closestShape) {
         Color objColor = closestShape->getColor();
+        double reflectivity = closestShape->getReflectivity();
         
         // Very low ambient for strong shadow contrast
         double ambientFactor = (this->ambient > 0) ? this->ambient * 0.15 : 0.05;
@@ -172,6 +181,28 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
             }
         }
 
+        // Reflections
+        if (reflectivity > 0) {
+            // R = D - 2 * (D . N) * N
+            double dotDN = ray.direction.x * closestNormal.x + ray.direction.y * closestNormal.y + ray.direction.z * closestNormal.z;
+            maths::Vector3D reflectDir;
+            reflectDir.x = ray.direction.x - 2.0 * dotDN * closestNormal.x;
+            reflectDir.y = ray.direction.y - 2.0 * dotDN * closestNormal.y;
+            reflectDir.z = ray.direction.z - 2.0 * dotDN * closestNormal.z;
+
+            Raytracer::Ray reflectRay(
+                maths::Point3D(closestInters.x + closestNormal.x * 0.001, 
+                               closestInters.y + closestNormal.y * 0.001, 
+                               closestInters.z + closestNormal.z * 0.001),
+                reflectDir
+            );
+
+            Color reflectColor = getColor(reflectRay, depth + 1);
+            r = r * (1.0 - reflectivity) + reflectColor.r * reflectivity;
+            g = g * (1.0 - reflectivity) + reflectColor.g * reflectivity;
+            b = b * (1.0 - reflectivity) + reflectColor.b * reflectivity;
+        }
+
         // Clamp
         if (r > 255) r = 255;
         if (g > 255) g = 255;
@@ -181,7 +212,6 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
         pixelColor.g = g;
         pixelColor.b = b;
     }
-    // else: black background
 
     return pixelColor;
 }

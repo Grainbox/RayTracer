@@ -30,8 +30,10 @@ namespace Raytracer
 
         private:
             Color getColor(int x, int y);
+            Color getColor(const Ray &ray, int depth);
             float ambient;
             float diffuse;
+            static const int MAX_DEPTH = 5;
 
             std::vector<std::shared_ptr<IShape>> shapes;
             std::vector<std::shared_ptr<ALight>> lights;
