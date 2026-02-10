@@ -30,7 +30,7 @@ namespace Raytracer {
         //     thiscp->setSettings(settings);
         //     return thiscp;
         // }
-        bool hits(const Ray &ray, maths::Point3D &intersectionPoint) const override;
+        bool hits(const Ray &ray, maths::Point3D &intersectionPoint, maths::Vector3D &normal) const override;
         bool doubleHits(const Ray &ray) const override;
     };
 }

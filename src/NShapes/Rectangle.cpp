@@ -44,10 +44,11 @@ bool Raytracer::Rectangle::doubleHits(const Ray &ray) const
     return false;
 }
 
-bool Raytracer::Rectangle::hits(const Ray &ray, maths::Point3D &intersectionPoint) const
+bool Raytracer::Rectangle::hits(const Ray &ray, maths::Point3D &intersectionPoint, maths::Vector3D &normal) const
 {
     (void)ray;
     (void)intersectionPoint;
+    (void)normal;
     // todo
     std::cerr << "Rectangle::hits() not implemented" << std::endl;
     return false;

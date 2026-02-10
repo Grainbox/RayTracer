@@ -1,23 +1,67 @@
-# Raytracer Project
+# RayTracer
 
-This is a Raytracer project developed for Epitech. The Raytracer is a computer graphics technique used to create realistic images by simulating the path of light rays. This project aims to implement a basic Raytracer using the C programming language.
+RayTracer is a powerful and efficient ray tracing engine written in C++. It simulates the path of light to generate realistic images, supporting features like Phong shading, specular highlights, and configurable scenes.
 
-## Features
+![RayTracer Example](screen.png)
 
-- **Basic Shapes**: The Raytracer supports rendering of basic geometric shapes such as spheres, planes, and cylinders.
-- **Shading and Lighting**: The project includes shading and lighting models to calculate the colors and shadows of objects in the scene.
-- **Reflection and Refraction**: The Raytracer supports reflection and refraction effects for objects with reflective or transparent surfaces.
-- **Texture Mapping**: The project includes texture mapping techniques to apply images or patterns to objects in the scene.
-- **Anti-Aliasing**: The Raytracer implements anti-aliasing techniques to reduce the jagged edges in rendered images.
-- **Multithreading**: The rendering process is optimized by utilizing multithreading to distribute the workload across multiple CPU cores.
+## ✨ Features
 
-## Installation
+- **Primitives**: Renders basic shapes including Spheres, Planes, and Rectangles.
+- **Lighting**: Phong shading model with ambient, diffuse, and specular components.
+- **Point & Directional Lights**: Multiple light source types with attenuation.
+- **Configuration**: `libconfig`-based scene configuration for easy setup.
 
-To build and run the Raytracer project, follow these steps:
+## 🚀 Getting Started
 
-1. Clone the repository: `git clone https://github.com/your_username/raytracer.git`
-2. Change to the project directory: `cd raytracer`
-3. Build the project: `make`
-4. Run the Raytracer: `./raytracer scene_file.json output_image.png`
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
-Make sure you have the necessary dependencies installed, such as the C compiler and relevant libraries.
+### Prerequisites
+
+- **CMake**: v3.14 or higher
+- **C++ Compiler**: GCC, Clang, or MSVC supporting C++17
+- **Git**: To clone the repository
+
+### Installation
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/raytracer.git
+    cd raytracer
+    ```
+
+2.  **Configure the project:**
+    ```bash
+    cmake -S . -B build
+    ```
+    *CMake will automatically fetch and build dependencies (SFML, libconfig).*
+
+3.  **Build the executable:**
+    ```bash
+    cmake --build build --config Release
+    ```
+
+### Running
+
+Once built, you can run the raytracer from the build directory.
+
+**On Linux/macOS:**
+```bash
+./build/raytracer scenes/example.cfg
+```
+
+**On Windows:**
+```powershell
+.\build\Release\raytracer.exe scenes\example.cfg
+```
+
+### Configuration
+
+Scenes are defined in configuration files (usually in the `scenes/` directory). Refer to `scenes/example.cfg` to understand the format.
+
+## 🛠️ Built With
+
+- [C++17](https://en.cppreference.com/w/cpp/17) - The core programming language.
+- [SFML](https://www.sfml-dev.org/) - For window management and image display.
+- [libconfig](https://hyperrealm.github.io/libconfig/) - For parsing configuration files.
+- [CMake](https://cmake.org/) - Build system.
+

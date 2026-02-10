@@ -39,7 +39,7 @@ bool Raytracer::Sphere::doubleHits(const Ray &ray) const
     return false;
 }
 
-bool Raytracer::Sphere::hits(const Ray &ray, maths::Point3D &intersectionPoint) const
+bool Raytracer::Sphere::hits(const Ray &ray, maths::Point3D &intersectionPoint, maths::Vector3D &normal) const
 {
     maths::Vector3D oc;
 
@@ -60,18 +60,26 @@ bool Raytracer::Sphere::hits(const Ray &ray, maths::Point3D &intersectionPoint) 
         double t1 = (-b - std::sqrt(discriminant)) / (2 * a);
         double t2 = (-b + std::sqrt(discriminant)) / (2 * a);
 
+        double t = -1.0;
         if (t1 >= 0) {
-            maths::Point3D ori = ray.origin;
-            maths::Vector3D dir = ray.direction;
-            intersectionPoint = ori + dir * t1;
-            return true;
-            // maths::Vector3D p2 = {ray.origin.x + t2 * ray.direction.x, ray.origin.y + t2 * ray.direction.y, ray.origin.z + t2 * ray.direction.z};
+            t = t1;
+        } else if (t2 >= 0) {
+            t = t2;
         }
-        if (t2 >= 0) {
+
+        if (t >= 0) {
             maths::Point3D ori = ray.origin;
             maths::Vector3D dir = ray.direction;
-            intersectionPoint = ori + dir * t2;
-            // maths::Vector3D p2 = {ray.origin.x + t2 * ray.direction.x, ray.origin.y + t2 * ray.direction.y, ray.origin.z + t2 * ray.direction.z};
+            intersectionPoint = ori + dir * t;
+            
+            // Calculate normal
+            normal.x = intersectionPoint.x - center.x;
+            normal.y = intersectionPoint.y - center.y;
+            normal.z = intersectionPoint.z - center.z;
+            double len = normal.length();
+            if (len > 0) normal /= len;
+            
+            return true;
         }
     }
     return false;

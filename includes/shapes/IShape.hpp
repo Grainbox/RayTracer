@@ -24,7 +24,7 @@ namespace Raytracer
             virtual ~IShape() = default;
 
             // getters
-            virtual bool hits(const Ray &ray, maths::Point3D &intersectionPoint) const = 0;
+            virtual bool hits(const Ray &ray, maths::Point3D &intersectionPoint, maths::Vector3D &normal) const = 0;
             virtual bool doubleHits(const Ray &ray) const = 0;
             virtual Color getColor() const = 0;
             virtual maths::Point3D getCenter() const = 0;

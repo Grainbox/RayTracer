@@ -5,6 +5,7 @@
 ** Camera.cpp
 */
 
+#define _USE_MATH_DEFINES
 #include "Maths.hpp"
 #include "Raytracer.hpp"
 
@@ -49,20 +50,12 @@ Raytracer::Camera &Raytracer::Camera::operator=(const Camera &other)
 
 Raytracer::Ray Raytracer::Camera::ray(double u, double v)
 {
-    // maths::Point3D point;
-    // maths::Vector3D direction;
-
-    // point.x = _origin.x + u;
-    // point.y = _origin.y + v;
-    // point.z = _origin.z;
-    // direction.x = point.x - _origin.x;
-    // direction.y = point.y - _origin.y;
-    // direction.z = 1;
-
-    // return Raytracer::Ray(_origin, direction);
-    Raytracer::Ray r;
-    maths::Point3D point = _screen.pointAt(u, v);
+    // We invert v to match standard image coordinates (Top-Left 0,0) with World Up (+Y)
+    // Pixel 0 (Top) -> High Y (World Up)
+    // Pixel Height (Bottom) -> Low Y (World Down)
+    maths::Point3D point = _screen.pointAt(u, _height - v);
     
+    Raytracer::Ray r;
     r.origin = _origin;
     r.direction.x = point.x - _origin.x;
     r.direction.y = point.y - _origin.y;
