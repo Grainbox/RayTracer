@@ -98,6 +98,7 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
         for (auto &light : lights) {
             maths::Vector3D lightDir;
             double attenuation = 1.0;
+            double distanceToLight = 1e20; // Infinity
             
             if (auto dLight = std::dynamic_pointer_cast<DirectionalLight>(light)) {
                 lightDir = dLight->getDirection();
@@ -108,8 +109,8 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
                 lightDir.y = lightPos.y - closestInters.y;
                 lightDir.z = lightPos.z - closestInters.z;
                 
-                double lightDist = std::sqrt(lightDir.x*lightDir.x + lightDir.y*lightDir.y + lightDir.z*lightDir.z);
-                attenuation = 1.0 / (1.0 + 0.0003 * lightDist * lightDist);
+                distanceToLight = std::sqrt(lightDir.x*lightDir.x + lightDir.y*lightDir.y + lightDir.z*lightDir.z);
+                attenuation = 1.0 / (1.0 + 0.0003 * distanceToLight * distanceToLight);
             }
 
             // Normalize LightDir
@@ -117,6 +118,28 @@ Raytracer::Color Raytracer::Scene::getColor(int x, int y)
             if (len > 0) {
                 lightDir.x /= len; lightDir.y /= len; lightDir.z /= len;
             }
+
+            // Hard Shadows: Ray from intersection to light
+            Raytracer::Ray shadowRay(
+                maths::Point3D(closestInters.x + closestNormal.x * 0.001, 
+                               closestInters.y + closestNormal.y * 0.001, 
+                               closestInters.z + closestNormal.z * 0.001),
+                lightDir
+            );
+
+            bool inShadow = false;
+            for (auto &shape : shapes) {
+                maths::Point3D shadowInters;
+                maths::Vector3D shadowNormal;
+                if (shape->hits(shadowRay, shadowInters, shadowNormal)) {
+                    double dist = shadowInters.distanceBetween(shadowRay.origin);
+                    if (dist < distanceToLight) {
+                        inShadow = true;
+                        break;
+                    }
+                }
+            }
+            if (inShadow) continue;
 
             // Diffuse (Lambertian)
             double dot = closestNormal.x * lightDir.x + closestNormal.y * lightDir.y + closestNormal.z * lightDir.z;
