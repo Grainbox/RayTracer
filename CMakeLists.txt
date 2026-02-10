@@ -9,6 +9,8 @@ include(FetchContent)
 
 # --- Dependencies ---
 
+find_package(Threads REQUIRED)
+
 # SFML
 FetchContent_Declare(
   sfml
@@ -48,6 +50,7 @@ set(SRC_FILES
     src/NShapes/Sphere.cpp
     src/NShapes/Rectangle.cpp
     src/NShapes/Plane.cpp
+    src/NShapes/Cylinder.cpp
     src/NShapes/Factory.cpp
 )
 
@@ -72,7 +75,7 @@ else()
     set(LIBCONFIG_TARGET config++)
 endif()
 
-target_link_libraries(raytracer PRIVATE sfml-graphics sfml-audio sfml-window sfml-system ${LIBCONFIG_TARGET})
+target_link_libraries(raytracer PRIVATE sfml-graphics sfml-audio sfml-window sfml-system ${LIBCONFIG_TARGET} Threads::Threads)
 
 # Copy config files if needed (assuming scenes are in scenes/ folder)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scenes DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

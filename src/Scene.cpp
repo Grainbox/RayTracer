@@ -23,43 +23,105 @@ void Raytracer::Scene::setCamera(const Camera &camera)
     // printf("%f\n", this->camera.getScreen().origin.x);
 }
 
+#include <thread>
+#include <mutex>
+
 std::string Raytracer::Scene::render()
 {
     int height = camera.getHeight();
     int width = camera.getWidth();
     int max_pixel_val = 255;
+    
+    // Intermediate buffer to store colors
+    std::vector<Color> pixels(width * height);
+    
+    unsigned int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0) numThreads = 1;
 
-    std::string frame =
-        "P3 " + std::to_string(width) + " " + std::to_string(height) +
-        " " + std::to_string(max_pixel_val) + "\n"; // Header
-
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            Color color = this->getColor(j, i);
-            frame += std::to_string((int)color.r);
-            frame += " ";
-            frame += std::to_string((int)color.g);
-            frame += " ";
-            frame += std::to_string((int)color.b);
-            frame += " ";
-        }
+    std::cout << "Rendering with " << numThreads << " threads..." << std::endl;
+    
+    std::vector<std::thread> threads;
+    int rowsPerThread = height / numThreads;
+    
+    for (unsigned int t = 0; t < numThreads; ++t) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == numThreads - 1) ? height : (t + 1) * rowsPerThread;
+        
+        threads.emplace_back([this, startRow, endRow, width, &pixels]() {
+            for (int i = startRow; i < endRow; ++i) {
+                for (int j = 0; j < width; ++j) {
+                    pixels[i * width + j] = this->getColor(j, i);
+                }
+            }
+        });
     }
+
+    for (auto &t : threads) {
+        t.join();
+    }
+
+    // Assemble final string
+    std::string frame = "P3\n" + std::to_string(width) + " " + std::to_string(height) + "\n" + std::to_string(max_pixel_val) + "\n";
+    
+    // Reserve space for speed (estimated 4 chars per color component + spaces)
+    frame.reserve(frame.size() + width * height * 12);
+
+    for (const auto &color : pixels) {
+        frame += std::to_string((int)color.r) + " " + 
+                 std::to_string((int)color.g) + " " + 
+                 std::to_string((int)color.b) + " ";
+    }
+    
     return frame;
 }
 
+#include <random>
+
 Raytracer::Color Raytracer::Scene::getColor(int x, int y)
 {
-    Raytracer::Ray ray = camera.ray(x, y);
-    
-    // Normalize ray direction
-    double rayLen = std::sqrt(ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y + ray.direction.z * ray.direction.z);
-    if (rayLen > 0) {
-        ray.direction.x /= rayLen;
-        ray.direction.y /= rayLen;
-        ray.direction.z /= rayLen;
+    if (this->samples <= 1) {
+        Raytracer::Ray ray = camera.ray(x, y);
+        
+        // Normalize ray direction
+        double rayLen = std::sqrt(ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y + ray.direction.z * ray.direction.z);
+        if (rayLen > 0) {
+            ray.direction.x /= rayLen;
+            ray.direction.y /= rayLen;
+            ray.direction.z /= rayLen;
+        }
+
+        return getColor(ray, 0);
     }
 
-    return getColor(ray, 0);
+    // Supersampling (Anti-Aliasing)
+    Color finalColor = {0, 0, 0};
+    static std::mt19937 gen(std::hash<std::thread::id>{}(std::this_thread::get_id()));
+    std::uniform_real_distribution<double> dist(-0.5, 0.5);
+
+    for (int s = 0; s < this->samples; s++) {
+        double offsetX = dist(gen);
+        double offsetY = dist(gen);
+        
+        Raytracer::Ray ray = camera.ray(x + offsetX, y + offsetY);
+        
+        double rayLen = std::sqrt(ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y + ray.direction.z * ray.direction.z);
+        if (rayLen > 0) {
+            ray.direction.x /= rayLen;
+            ray.direction.y /= rayLen;
+            ray.direction.z /= rayLen;
+        }
+
+        Color c = getColor(ray, 0);
+        finalColor.r += c.r;
+        finalColor.g += c.g;
+        finalColor.b += c.b;
+    }
+
+    finalColor.r /= this->samples;
+    finalColor.g /= this->samples;
+    finalColor.b /= this->samples;
+
+    return finalColor;
 }
 
 Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth)
@@ -93,8 +155,8 @@ Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth
         Color objColor = closestShape->getColor();
         double reflectivity = closestShape->getReflectivity();
         
-        // Very low ambient for strong shadow contrast
-        double ambientFactor = (this->ambient > 0) ? this->ambient * 0.15 : 0.05;
+        // Ambient Light
+        double ambientFactor = (this->ambient > 0) ? this->ambient : 0.1;
         
         double r = objColor.r * ambientFactor;
         double g = objColor.g * ambientFactor;
@@ -119,7 +181,7 @@ Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth
                 lightDir.z = lightPos.z - closestInters.z;
                 
                 distanceToLight = std::sqrt(lightDir.x*lightDir.x + lightDir.y*lightDir.y + lightDir.z*lightDir.z);
-                attenuation = 1.0 / (1.0 + 0.0003 * distanceToLight * distanceToLight);
+                attenuation = 1.0 / (1.0 + 0.0001 * distanceToLight * distanceToLight); // Reduced attenuation slightly
             }
 
             // Normalize LightDir
@@ -128,7 +190,7 @@ Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth
                 lightDir.x /= len; lightDir.y /= len; lightDir.z /= len;
             }
 
-            // Hard Shadows: Ray from intersection to light
+            // Shadows with transparency support
             Raytracer::Ray shadowRay(
                 maths::Point3D(closestInters.x + closestNormal.x * 0.001, 
                                closestInters.y + closestNormal.y * 0.001, 
@@ -136,52 +198,66 @@ Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth
                 lightDir
             );
 
-            bool inShadow = false;
+            double lightTransmission = 1.0;
             for (auto &shape : shapes) {
                 maths::Point3D shadowInters;
                 maths::Vector3D shadowNormal;
                 if (shape->hits(shadowRay, shadowInters, shadowNormal)) {
                     double dist = shadowInters.distanceBetween(shadowRay.origin);
                     if (dist < distanceToLight) {
-                        inShadow = true;
-                        break;
+                        lightTransmission *= shape->getTransparency();
+                        if (lightTransmission <= 0.01) break;
                     }
                 }
             }
-            if (inShadow) continue;
-
-            // Diffuse (Lambertian)
-            double dot = closestNormal.x * lightDir.x + closestNormal.y * lightDir.y + closestNormal.z * lightDir.z;
             
-            if (dot > 0) {
-                r += objColor.r * diffuseFactor * dot * attenuation;
-                g += objColor.g * diffuseFactor * dot * attenuation;
-                b += objColor.b * diffuseFactor * dot * attenuation;
+            // Apply light if some reaches the point
+            if (lightTransmission > 0) {
+                // Diffuse (Lambertian)
+                double dot = closestNormal.x * lightDir.x + closestNormal.y * lightDir.y + closestNormal.z * lightDir.z;
+                
+                if (dot > 0) {
+                    double effectiveIntensity = diffuseFactor * dot * attenuation * lightTransmission;
+                    
+                    r += objColor.r * effectiveIntensity;
+                    g += objColor.g * effectiveIntensity;
+                    b += objColor.b * effectiveIntensity;
 
-                // Specular (Phong reflection)
-                // Reflect light direction: R = 2*(N.L)*N - L
-                double rx = 2.0 * dot * closestNormal.x - lightDir.x;
-                double ry = 2.0 * dot * closestNormal.y - lightDir.y;
-                double rz = 2.0 * dot * closestNormal.z - lightDir.z;
+                    // Specular (Phong reflection)
+                    // Reflect light direction: R = 2*(N.L)*N - L
+                    double rx = 2.0 * dot * closestNormal.x - lightDir.x;
+                    double ry = 2.0 * dot * closestNormal.y - lightDir.y;
+                    double rz = 2.0 * dot * closestNormal.z - lightDir.z;
 
-                // View direction (from intersection to camera)
-                double vx = ray.origin.x - closestInters.x;
-                double vy = ray.origin.y - closestInters.y;
-                double vz = ray.origin.z - closestInters.z;
-                double vLen = std::sqrt(vx*vx + vy*vy + vz*vz);
-                if (vLen > 0) { vx /= vLen; vy /= vLen; vz /= vLen; }
+                    // View direction (from intersection to camera)
+                    double vx = ray.origin.x - closestInters.x;
+                    double vy = ray.origin.y - closestInters.y;
+                    double vz = ray.origin.z - closestInters.z;
+                    double vLen = std::sqrt(vx*vx + vy*vy + vz*vz);
+                    if (vLen > 0) { vx /= vLen; vy /= vLen; vz /= vLen; }
 
-                double specDot = rx*vx + ry*vy + rz*vz;
-                if (specDot > 0) {
-                    double specFactor = specularStrength * std::pow(specDot, shininess) * attenuation;
-                    r += 255 * specFactor;
-                    g += 255 * specFactor;
-                    b += 255 * specFactor;
+                    double specDot = rx*vx + ry*vy + rz*vz;
+                    if (specDot > 0) {
+                        double specFactor = specularStrength * std::pow(specDot, shininess) * attenuation * lightTransmission;
+                        r += 255 * specFactor;
+                        g += 255 * specFactor;
+                        b += 255 * specFactor;
+                    }
                 }
             }
         }
 
-        // Reflections
+        // Clamp
+        if (r > 255) r = 255;
+        if (g > 255) g = 255;
+        if (b > 255) b = 255;
+
+        pixelColor.r = r;
+        pixelColor.g = g;
+        pixelColor.b = b;
+
+        // --- Reflections ---
+        Color reflectColor = {0, 0, 0};
         if (reflectivity > 0) {
             // R = D - 2 * (D . N) * N
             double dotDN = ray.direction.x * closestNormal.x + ray.direction.y * closestNormal.y + ray.direction.z * closestNormal.z;
@@ -197,20 +273,68 @@ Raytracer::Color Raytracer::Scene::getColor(const Raytracer::Ray &ray, int depth
                 reflectDir
             );
 
-            Color reflectColor = getColor(reflectRay, depth + 1);
-            r = r * (1.0 - reflectivity) + reflectColor.r * reflectivity;
-            g = g * (1.0 - reflectivity) + reflectColor.g * reflectivity;
-            b = b * (1.0 - reflectivity) + reflectColor.b * reflectivity;
+            reflectColor = getColor(reflectRay, depth + 1);
+            pixelColor.r = pixelColor.r * (1.0 - reflectivity) + reflectColor.r * reflectivity;
+            pixelColor.g = pixelColor.g * (1.0 - reflectivity) + reflectColor.g * reflectivity;
+            pixelColor.b = pixelColor.b * (1.0 - reflectivity) + reflectColor.b * reflectivity;
         }
 
-        // Clamp
-        if (r > 255) r = 255;
-        if (g > 255) g = 255;
-        if (b > 255) b = 255;
+        // --- Refractions ---
+        double transparency = closestShape->getTransparency();
+        if (transparency > 0) {
+            double n1 = 1.0; // Air
+            double n2 = closestShape->getRefractiveIndex();
+            
+            double dotDN = ray.direction.x * closestNormal.x + ray.direction.y * closestNormal.y + ray.direction.z * closestNormal.z;
+            maths::Vector3D normal = closestNormal;
 
-        pixelColor.r = r;
-        pixelColor.g = g;
-        pixelColor.b = b;
+            if (dotDN > 0) {
+                // Ray exiting the object
+                std::swap(n1, n2);
+                normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z;
+            } else {
+                // Ray entering the object
+                dotDN = -dotDN;
+            }
+
+            double ratio = n1 / n2;
+            double k = 1.0 - ratio * ratio * (1.0 - dotDN * dotDN);
+
+            if (k >= 0) {
+                // Refraction ray direction
+                maths::Vector3D refractDir;
+                refractDir.x = ratio * ray.direction.x + (ratio * dotDN - std::sqrt(k)) * normal.x;
+                refractDir.y = ratio * ray.direction.y + (ratio * dotDN - std::sqrt(k)) * normal.y;
+                refractDir.z = ratio * ray.direction.z + (ratio * dotDN - std::sqrt(k)) * normal.z;
+
+                Raytracer::Ray refractRay(
+                    maths::Point3D(closestInters.x - normal.x * 0.001, 
+                                   closestInters.y - normal.y * 0.001, 
+                                   closestInters.z - normal.z * 0.001),
+                    refractDir
+                );
+
+                // Schlick's approximation for Fresnel
+                double r0 = (n1 - n2) / (n1 + n2);
+                r0 *= r0;
+                double fresnel = r0 + (1.0 - r0) * std::pow(1.0 - dotDN, 5);
+
+                Color refractColor = getColor(refractRay, depth + 1);
+                
+                // Blend: Transparency modulates how much of the "refracted path" we see
+                pixelColor.r = pixelColor.r * (1.0 - transparency) + 
+                               (reflectColor.r * fresnel + refractColor.r * (1.0 - fresnel)) * transparency;
+                pixelColor.g = pixelColor.g * (1.0 - transparency) + 
+                               (reflectColor.g * fresnel + refractColor.g * (1.0 - fresnel)) * transparency;
+                pixelColor.b = pixelColor.b * (1.0 - transparency) + 
+                               (reflectColor.b * fresnel + refractColor.b * (1.0 - fresnel)) * transparency;
+            } else {
+                // Total Internal Reflection
+                pixelColor.r = pixelColor.r * (1.0 - transparency) + reflectColor.r * transparency;
+                pixelColor.g = pixelColor.g * (1.0 - transparency) + reflectColor.g * transparency;
+                pixelColor.b = pixelColor.b * (1.0 - transparency) + reflectColor.b * transparency;
+            }
+        }
     }
 
     return pixelColor;

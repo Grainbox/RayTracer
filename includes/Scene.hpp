@@ -24,6 +24,7 @@ namespace Raytracer
             void setCamera(const Camera &camera);
             void setAmbientLight(float ambient) { this->ambient = ambient;}
             void setDiffuseLight(float diffuse) { this->diffuse = diffuse;}
+            void setSamples(int samples) { this->samples = samples; }
             std::vector<std::shared_ptr<IShape>> getShapes() const { return shapes; }
             std::vector<std::shared_ptr<ALight>> getLights() const { return lights; }
             std::string render();
@@ -33,6 +34,7 @@ namespace Raytracer
             Color getColor(const Ray &ray, int depth);
             float ambient;
             float diffuse;
+            int samples = 1;
             static const int MAX_DEPTH = 5;
 
             std::vector<std::shared_ptr<IShape>> shapes;

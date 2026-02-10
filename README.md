@@ -4,14 +4,18 @@ RayTracer is a powerful and efficient ray tracing engine written in C++. It simu
 
 ![RayTracer Example](screen.png)
 
-## ✨ Features
+---
+
+## Features
 
 - **Primitives**: Renders basic shapes including Spheres, Planes, and Rectangles.
 - **Lighting**: Phong shading model with ambient, diffuse, and specular components.
 - **Point & Directional Lights**: Multiple light source types with attenuation.
 - **Configuration**: `libconfig`-based scene configuration for easy setup.
 
-## 🚀 Getting Started
+---
+
+## Getting Started
 
 Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
@@ -54,11 +58,13 @@ Once built, you can run the raytracer from the build directory.
 .\build\Release\raytracer.exe scenes\example.cfg
 ```
 
+---
+
 ### Configuration
 
 Scenes are defined in configuration files (usually in the `scenes/` directory). Refer to `scenes/example.cfg` to understand the format.
 
-## 🛠️ Built With
+## Built With
 
 - [C++17](https://en.cppreference.com/w/cpp/17) - The core programming language.
 - [SFML](https://www.sfml-dev.org/) - For window management and image display.

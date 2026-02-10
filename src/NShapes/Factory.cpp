@@ -9,16 +9,20 @@
 #include <shapes/Sphere.hpp>
 #include <shapes/Rectangle.hpp>
 #include <shapes/Plane.hpp>
+#include <shapes/Cylinder.hpp>
 
 Raytracer::SFactory::SFactory(void) noexcept
 {
     addShape("spheres", [](const libconfig::Setting &settings) -> std::shared_ptr<IShape> {
-    return std::make_shared<Sphere>(settings);
+        return std::make_shared<Sphere>(settings);
     });
     addShape("rectangles", [](const libconfig::Setting &settings) -> std::shared_ptr<IShape> {
         return std::make_shared<Rectangle>(settings);
     });
     addShape("planes", [](const libconfig::Setting &settings) -> std::shared_ptr<IShape> {
         return std::make_shared<Plane>(settings);
+    });
+    addShape("cylinders", [](const libconfig::Setting &settings) -> std::shared_ptr<IShape> {
+        return std::make_shared<Cylinder>(settings);
     });
 }

@@ -128,6 +128,9 @@ void Raytracer::Parser::ConfigParser::setScene(const libconfig::Setting &root)
     setSceneCamera(root["scene"]["camera"]);
     setScenePrimitives(root["scene"]["primitives"]);
     setSceneLights(root["scene"]["lights"]);
+
+    if (root["scene"].exists("samples"))
+        this->_scene.setSamples(root["scene"]["samples"]);
 }
 
 void Raytracer::Parser::ConfigParser::parse(const std::string &path)

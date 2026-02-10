@@ -2,6 +2,7 @@
 #include <shapes/Rectangle.hpp>
 #include <shapes/Sphere.hpp>
 #include <shapes/Plane.hpp>
+#include <shapes/Cylinder.hpp>
 
 template <typename ShapeType>
 Raytracer::AShape<ShapeType>::AShape(const libconfig::Setting &setting)
@@ -19,6 +20,18 @@ template <typename ShapeType>
 double Raytracer::AShape<ShapeType>::getReflectivity() const
 {
     return this->reflectivity;
+}
+
+template <typename ShapeType>
+double Raytracer::AShape<ShapeType>::getTransparency() const
+{
+    return this->transparency;
+}
+
+template <typename ShapeType>
+double Raytracer::AShape<ShapeType>::getRefractiveIndex() const
+{
+    return this->refractiveIndex;
 }
 
 template <typename ShapeType>
@@ -46,6 +59,18 @@ void Raytracer::AShape<ShapeType>::setReflectivity(double reflectivity)
 }
 
 template <typename ShapeType>
+void Raytracer::AShape<ShapeType>::setTransparency(double transparency)
+{
+    this->transparency = transparency;
+}
+
+template <typename ShapeType>
+void Raytracer::AShape<ShapeType>::setRefractiveIndex(double refractiveIndex)
+{
+    this->refractiveIndex = refractiveIndex;
+}
+
+template <typename ShapeType>
 void Raytracer::AShape<ShapeType>::setCenter(maths::Point3D center)
 {
     this->center = center;
@@ -66,6 +91,10 @@ void Raytracer::AShape<ShapeType>::setSettings(const libconfig::Setting &setting
         this->color = {settings["color"][0], settings["color"][1], settings["color"][2]};
         if (settings.exists("reflectivity"))
             this->reflectivity = (double)settings["reflectivity"];
+        if (settings.exists("transparency"))
+            this->transparency = (double)settings["transparency"];
+        if (settings.exists("refractiveIndex"))
+            this->refractiveIndex = (double)settings["refractiveIndex"];
     } catch (const libconfig::SettingNotFoundException &nfex) {
         std::cerr << nfex.what() << std::endl;
     }
@@ -81,3 +110,4 @@ std::shared_ptr<Raytracer::IShape> const Raytracer::AShape<ShapeType>::clone(voi
 template class Raytracer::AShape<Raytracer::Rectangle>;
 template class Raytracer::AShape<Raytracer::Sphere>;
 template class Raytracer::AShape<Raytracer::Plane>;
+template class Raytracer::AShape<Raytracer::Cylinder>;
